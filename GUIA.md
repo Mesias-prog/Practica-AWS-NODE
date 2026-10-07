@@ -129,6 +129,24 @@ npm run deploy:azure:setup && npm run deploy:azure
   Por eso SSH escucha también en **2222**, abierto solo para la IP del administrador, y el destino `azure` del ecosistema usa `Port=2222`.
 - Para borrar todo: `az group delete -n practica-aws-node-rg --yes`.
 
+## Base de datos: MongoDB Atlas
+
+La app usa el **patrón Repositorio** (`src/db.js`): con `MONGODB_URI` guarda en MongoDB Atlas;
+sin ella usa memoria (solo para desarrollo y `npm test`).
+
+1. Atlas → clúster **M0 (Free)** → *Security → Database Access*: usuario `appuser` con rol *Read and write to any database*.
+2. *Security → Network Access*: agregar la IP pública del servidor (`130.131.46.243` en Azure).
+3. En Git Bash, sin escribir la contraseña en ningún archivo:
+
+```bash
+read -rsp "Contraseña de appuser: " PASS; echo
+URI="mongodb+srv://appuser:${PASS}@cluster0.ihko6ln.mongodb.net/practica"
+ssh -p 2222 -i ~/.ssh/practica-cloud ubuntu@130.131.46.243 "sed -i 's|^MONGODB_URI=.*|MONGODB_URI=$URI|' /var/www/tu-app/shared/.env"
+npm run deploy:azure
+```
+
+4. Verificar: `curl http://130.131.46.243/health` → `"baseDeDatos":{"tipo":"mongodb","conectado":true}`.
+
 ## Correcciones respecto a los PDF
 
 | Guía original | Problema | En este proyecto |
