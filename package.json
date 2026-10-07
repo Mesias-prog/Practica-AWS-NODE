@@ -8,7 +8,9 @@
     "dev": "node --watch index.js",
     "test": "node --test",
     "deploy:setup": "pm2 deploy ecosystem.config.js production setup",
-    "deploy": "pm2 deploy ecosystem.config.js production"
+    "deploy": "pm2 deploy ecosystem.config.js production",
+    "deploy:azure:setup": "pm2 deploy ecosystem.config.js azure setup",
+    "deploy:azure": "pm2 deploy ecosystem.config.js azure"
   },
   "engines": {
     "node": ">=20"

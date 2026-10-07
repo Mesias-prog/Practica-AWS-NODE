@@ -112,6 +112,23 @@ Detecta automáticamente si la URL es de Slack o de Discord.
 
 Comandos útiles en el servidor: `pm2 list`, `pm2 logs`, `pm2 monit`, `sudo nginx -t`, `sudo systemctl reload nginx`.
 
+## Despliegue en Azure (VM equivalente)
+
+Misma arquitectura (Ubuntu 24.04 + Nginx + PM2) en una VM de **Azure for Students**:
+
+```bash
+az account set --subscription "Azure for Students"
+bash deploy/provision-azure.sh          # grupo de recursos, VM, IP estática y reglas de red
+scp -P 2222 -i ~/.ssh/practica-cloud deploy/setup-server.sh deploy/nginx-default.conf ubuntu@IP_AZURE:~
+ssh -p 2222 -i ~/.ssh/practica-cloud ubuntu@IP_AZURE "bash ~/setup-server.sh"
+npm run deploy:azure:setup && npm run deploy:azure
+```
+
+- Azure for Students solo permite las regiones westus, francecentral, northcentralus, chilecentral y spaincentral.
+- Desde la red local, el puerto 22 hacia Azure llega bloqueado (los paquetes nunca alcanzan la VM).
+  Por eso SSH escucha también en **2222**, abierto solo para la IP del administrador, y el destino `azure` del ecosistema usa `Port=2222`.
+- Para borrar todo: `az group delete -n practica-aws-node-rg --yes`.
+
 ## Correcciones respecto a los PDF
 
 | Guía original | Problema | En este proyecto |
