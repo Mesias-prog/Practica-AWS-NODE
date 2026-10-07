@@ -3,7 +3,7 @@ const path = require('path');
 
 // ─── Datos a completar ─────────────────────────────────────────────
 const IP_ELASTICA = 'TU_IP_ELASTICA_AQUI';                      // ej. 54.123.45.67
-const REPO = 'git@github.com:TU_USUARIO/TU_REPOSITORIO.git';    // URL SSH del repo
+const REPO = 'git@github.com:Mesias-prog/Practica-AWS-NODE.git';    // URL SSH del repo
 const LLAVE_PEM = '~/.ssh/tu-llave-aws.pem';                     // llave .pem en tu PC
 // ───────────────────────────────────────────────────────────────────
 
