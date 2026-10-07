@@ -57,6 +57,8 @@ pm2.connect((err) => {
 
     bus.on('process:event', ({ event, process: proc }) => {
       if (!APPS.includes(proc.name) || !EVENTS.includes(event)) return;
+      // "pm2 reload" (cada despliegue) reemplaza las instancias: las antiguas se llaman _old_N
+      if (String(proc.pm_id).startsWith('_old_')) return;
       const clave = proc.pm_id;
       if (!pendientes.has(clave)) {
         pendientes.set(clave, { proc, eventos: new Set() });
