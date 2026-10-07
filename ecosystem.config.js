@@ -2,9 +2,10 @@ const fs = require('fs');
 const path = require('path');
 
 // ─── Datos a completar ─────────────────────────────────────────────
-const IP_ELASTICA = 'TU_IP_ELASTICA_AQUI';                      // ej. 54.123.45.67
+const IP_ELASTICA = 'TU_IP_ELASTICA_AQUI';                      // IP elástica de AWS EC2
+const IP_AZURE = '130.131.46.243';                              // IP pública estática de la VM de Azure
 const REPO = 'git@github.com:Mesias-prog/Practica-AWS-NODE.git';    // URL SSH del repo
-const LLAVE_PEM = '~/.ssh/tu-llave-aws.pem';                     // llave .pem en tu PC
+const LLAVE_PEM = '~/.ssh/practica-cloud';                       // llave privada en tu PC
 // ───────────────────────────────────────────────────────────────────
 
 const APP_DIR = '/var/www/tu-app';
@@ -76,18 +77,26 @@ module.exports = {
   ],
 
   // Automatización del despliegue desde tu PC local (ejecutar en Git Bash)
+  //   AWS:   pm2 deploy ecosystem.config.js production
+  //   Azure: pm2 deploy ecosystem.config.js azure
   deploy: {
-    production: {
-      user: 'ubuntu',
-      host: IP_ELASTICA,
-      ref: 'origin/main',
-      repo: REPO,
-      path: APP_DIR,
-      'pre-setup': `mkdir -p ${APP_DIR}/shared ${LOG_DIR}`,
-      'post-deploy':
-        `mkdir -p ${LOG_DIR} && npm ci --omit=dev && ` +
-        'pm2 reload ecosystem.config.js --env production --update-env && pm2 save',
-      ssh_options: [`IdentityFile=${LLAVE_PEM}`, 'StrictHostKeyChecking=accept-new']
-    }
+    production: destino(IP_ELASTICA),
+    // En Azure el puerto 22 llega bloqueado desde la red local: SSH escucha también en 2222
+    azure: destino(IP_AZURE, 2222)
   }
 };
+
+function destino(host, puerto = 22) {
+  return {
+    user: 'ubuntu',
+    host,
+    ref: 'origin/main',
+    repo: REPO,
+    path: APP_DIR,
+    'pre-setup': `mkdir -p ${APP_DIR}/shared ${LOG_DIR}`,
+    'post-deploy':
+      `mkdir -p ${LOG_DIR} && npm ci --omit=dev && ` +
+      'pm2 reload ecosystem.config.js --env production --update-env && pm2 save',
+    ssh_options: [`IdentityFile=${LLAVE_PEM}`, `Port=${puerto}`, 'StrictHostKeyChecking=accept-new']
+  };
+}
