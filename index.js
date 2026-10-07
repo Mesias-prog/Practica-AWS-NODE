@@ -4,6 +4,7 @@ const cors = require('cors');
 const os = require('os');
 const path = require('path');
 
+const db = require('./src/db');
 const empleadosRouter = require('./src/routes/empleados.routes');
 
 const app = express();
@@ -27,7 +28,8 @@ app.get('/health', (req, res) => {
     instancia: process.env.NODE_APP_INSTANCE ?? null,
     host: os.hostname(),
     uptime: Math.round(process.uptime()),
-    ipCliente: req.ip
+    ipCliente: req.ip,
+    baseDeDatos: db.estado()
   });
 });
 
@@ -42,7 +44,8 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Error interno del servidor' });
 });
 
-if (require.main === module || process.env.pm_id !== undefined) {
+async function iniciar() {
+  await db.conectar();
   const server = app.listen(PORT, () => {
     console.log(`Servidor escuchando en http://localhost:${PORT} (pid ${process.pid})`);
     // Avisar a PM2 que la instancia está lista (wait_ready en ecosystem.config.js)
@@ -52,11 +55,21 @@ if (require.main === module || process.env.pm_id !== undefined) {
   // Apagado ordenado para que "pm2 reload" no corte peticiones en curso
   const shutdown = (signal) => {
     console.log(`${signal} recibido, cerrando servidor...`);
-    server.close(() => process.exit(0));
+    server.close(async () => {
+      await db.desconectar();
+      process.exit(0);
+    });
     setTimeout(() => process.exit(1), 5000).unref();
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+}
+
+if (require.main === module || process.env.pm_id !== undefined) {
+  iniciar().catch((err) => {
+    console.error('No se pudo iniciar la aplicación:', err.message);
+    process.exit(1);
+  });
 }
 
 module.exports = app;

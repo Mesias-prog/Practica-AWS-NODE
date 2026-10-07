@@ -1,17 +1,22 @@
 const { test, before, after } = require('node:test');
 const assert = require('node:assert');
 const app = require('../index');
+const db = require('../src/db');
 
 let server;
 let base;
 
 before(async () => {
+  await db.conectar(process.env.TEST_MONGODB_URI); // sin URI: repositorio en memoria
   server = app.listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
 
-after(() => server.close());
+after(async () => {
+  server.close();
+  await db.desconectar();
+});
 
 test('GET /health responde ok', async () => {
   const res = await fetch(`${base}/health`);

@@ -49,9 +49,8 @@ sudo chown -R ubuntu:ubuntu "$APP_DIR"
 if [ ! -f "$APP_DIR/shared/.env" ]; then
   cat > "$APP_DIR/shared/.env" <<'EOF'
 # Secretos de producción (no se suben a GitHub)
-DB_HOST=
-DB_USER=
-DB_PASS=
+# Cadena de conexión de MongoDB Atlas (mongodb+srv://usuario:clave@cluster.../practica)
+MONGODB_URI=
 # URL del Incoming Webhook de Slack (https://hooks.slack.com/...) o Discord
 WEBHOOK_URL=
 EOF

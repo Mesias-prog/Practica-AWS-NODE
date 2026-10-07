@@ -11,7 +11,7 @@ const LLAVE_PEM = '~/.ssh/practica-cloud';                       // llave privad
 const APP_DIR = '/var/www/tu-app';
 const LOG_DIR = `${APP_DIR}/logs`;
 
-// Los secretos (DB_PASS, WEBHOOK_URL...) NO se suben a GitHub: viven en
+// Los secretos (MONGODB_URI, WEBHOOK_URL...) NO se suben a GitHub: viven en
 // /var/www/tu-app/shared/.env dentro del servidor y se leen aquí al recargar.
 function leerEnv(archivo) {
   if (!fs.existsSync(archivo)) return {};
@@ -47,9 +47,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
-        DB_HOST: secretos.DB_HOST,
-        DB_USER: secretos.DB_USER,
-        DB_PASS: secretos.DB_PASS
+        MONGODB_URI: secretos.MONGODB_URI   // MongoDB Atlas
       },
 
       // Logs y monitoreo del servidor
