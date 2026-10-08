@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // ─── Datos a completar ─────────────────────────────────────────────
-const IP_ELASTICA = 'TU_IP_ELASTICA_AQUI';                      // IP elástica de AWS EC2
+const IP_ELASTICA = '3.138.218.34';                           // IP elástica de AWS EC2
 const IP_AZURE = '130.131.46.243';                              // IP pública estática de la VM de Azure
 const REPO = 'git@github.com:Mesias-prog/Practica-AWS-NODE.git';    // URL SSH del repo
 const LLAVE_PEM = '~/.ssh/practica-cloud';                       // llave privada en tu PC
@@ -79,8 +79,8 @@ module.exports = {
   //   AWS:   pm2 deploy ecosystem.config.js production
   //   Azure: pm2 deploy ecosystem.config.js azure
   deploy: {
-    production: destino(IP_ELASTICA),
-    // En Azure el puerto 22 llega bloqueado desde la red local: SSH escucha también en 2222
+    production: destino(IP_ELASTICA, 2222),
+    // Desde la red local el puerto 22 llega bloqueado: en ambas nubes SSH escucha también en 2222
     azure: destino(IP_AZURE, 2222)
   }
 };

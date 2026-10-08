@@ -3,12 +3,16 @@
 # Requiere: aws login (o aws configure) y la llave ~/.ssh/practica-cloud(.pub).
 set -euo pipefail
 
-REGION=${AWS_REGION:-us-east-1}
+# La cuenta (proyecto de AWS Settings) solo permite EC2 en su región principal: Ohio
+REGION=${AWS_REGION:-us-east-2}
 NAME=Practica-AWS-NODE
 KEY_NAME=practica-cloud
 SG_NAME=practica-aws-node-sg
 PUB_KEY=${PUB_KEY:-$HOME/.ssh/practica-cloud.pub}
 MY_IP=$(curl -s https://checkip.amazonaws.com)/32
+# Script de primer arranque: SSH también en el puerto 2222 (el 22 puede llegar bloqueado)
+USER_DATA="$(cd "$(dirname "$0")" && pwd)/ec2-user-data.sh"
+USER_DATA=$(cygpath -m "$USER_DATA" 2>/dev/null || echo "$USER_DATA")
 export AWS_DEFAULT_REGION=$REGION AWS_PAGER=""
 
 echo "==> Par de claves"
@@ -26,7 +30,7 @@ if [ "$SG_ID" = "None" ]; then
   aws ec2 authorize-security-group-ingress --group-id "$SG_ID" --ip-permissions \
     "IpProtocol=tcp,FromPort=80,ToPort=80,IpRanges=[{CidrIp=0.0.0.0/0,Description=HTTP}]" \
     "IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0,Description=HTTPS}]" \
-    "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$MY_IP,Description=SSH-Mi-IP}]" >/dev/null
+    "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$MY_IP,Description=SSH-Mi-IP}]"     "IpProtocol=tcp,FromPort=2222,ToPort=2222,IpRanges=[{CidrIp=$MY_IP,Description=SSH-2222-Mi-IP}]" >/dev/null
 fi
 
 echo "==> Instancia EC2 (Ubuntu 24.04)"
@@ -34,17 +38,17 @@ INSTANCE_ID=$(aws ec2 describe-instances \
   --filters Name=tag:Name,Values=$NAME Name=instance-state-name,Values=pending,running,stopped \
   --query 'Reservations[0].Instances[0].InstanceId' --output text)
 if [ "$INSTANCE_ID" = "None" ]; then
-  AMI=$(aws ssm get-parameter --name /aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id \
-    --query Parameter.Value --output text)
-  # Tipo apto para la capa gratuita en esta cuenta (t3.micro o t2.micro)
-  TYPE=$(aws ec2 describe-instance-types --filters Name=free-tier-eligible,Values=true \
-    --query "InstanceTypes[?InstanceType=='t3.micro' || InstanceType=='t2.micro'].InstanceType | sort(@) | [-1]" --output text)
-  [ "$TYPE" = "None" ] && TYPE=t3.micro
+  # AMI oficial más reciente de Canonical (099720109477) para Ubuntu 24.04 x86_64
+  AMI=$(aws ec2 describe-images --owners 099720109477 \
+    --filters "Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*" "Name=state,Values=available" \
+    --query 'sort_by(Images,&CreationDate)[-1].ImageId' --output text)
+  TYPE=${INSTANCE_TYPE:-t3.micro}   # 2 vCPU, 1 GB RAM (~0,0104 USD/h)
   echo "    AMI $AMI, tipo $TYPE"
   INSTANCE_ID=$(aws ec2 run-instances --image-id "$AMI" --instance-type "$TYPE" --key-name $KEY_NAME \
     --security-group-ids "$SG_ID" \
     --block-device-mappings 'DeviceName=/dev/sda1,Ebs={VolumeSize=8,VolumeType=gp3}' \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$NAME}]" \
+    --user-data "file://$USER_DATA" \
     --query 'Instances[0].InstanceId' --output text)
 fi
 aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
@@ -56,6 +60,10 @@ if [ "$EIP" = "None" ]; then
     --tag-specifications "ResourceType=elastic-ip,Tags=[{Key=Name,Value=$NAME}]" --query AllocationId --output text)
   aws ec2 associate-address --instance-id "$INSTANCE_ID" --allocation-id "$ALLOC" >/dev/null
   EIP=$(aws ec2 describe-addresses --allocation-ids "$ALLOC" --query 'Addresses[0].PublicIp' --output text)
+else
+  # Si la instancia se reemplazó, mover la IP elástica a la nueva
+  ALLOC=$(aws ec2 describe-addresses --filters Name=tag:Name,Values=$NAME --query 'Addresses[0].AllocationId' --output text)
+  aws ec2 associate-address --instance-id "$INSTANCE_ID" --allocation-id "$ALLOC" --allow-reassociation >/dev/null
 fi
 
 echo "INSTANCE_ID=$INSTANCE_ID"
