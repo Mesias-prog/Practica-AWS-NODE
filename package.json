@@ -1,6 +1,6 @@
 {
   "name": "mi-node-app",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "API Express desplegada en AWS EC2 con Nginx y PM2 (Práctica 06 - Patrones de diseño de APIs)",
   "main": "index.js",
   "scripts": {
