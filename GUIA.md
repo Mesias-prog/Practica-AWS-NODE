@@ -112,6 +112,21 @@ Detecta automáticamente si la URL es de Slack o de Discord.
 
 Comandos útiles en el servidor: `pm2 list`, `pm2 logs`, `pm2 monit`, `sudo nginx -t`, `sudo systemctl reload nginx`.
 
+## Despliegue real en AWS (con AWS CLI)
+
+```bash
+aws login                                 # en el navegador
+bash deploy/provision-aws.sh              # llave, grupo de seguridad, EC2 t3.micro, IP elástica
+scp -P 2222 -i ~/.ssh/practica-cloud deploy/setup-server.sh deploy/nginx-default.conf ubuntu@IP_AWS:~
+ssh -p 2222 -i ~/.ssh/practica-cloud ubuntu@IP_AWS "bash ~/setup-server.sh"
+npm run deploy:setup && npm run deploy
+```
+
+- La cuenta (proyecto de *AWS Settings*) solo permite EC2 en **us-east-2 (Ohio)**; en otras regiones devuelve `UnauthorizedOperation` por una SCP.
+- El puerto 22 llega bloqueado desde la red local: `deploy/ec2-user-data.sh` hace que SSH escuche también en **2222** desde el primer arranque.
+- Para borrar todo: terminar la instancia y liberar la IP elástica
+  (`aws ec2 terminate-instances` y `aws ec2 release-address`, región us-east-2).
+
 ## Despliegue en Azure (VM equivalente)
 
 Misma arquitectura (Ubuntu 24.04 + Nginx + PM2) en una VM de **Azure for Students**:
