@@ -2,6 +2,8 @@
 
 Proyecto listo para desplegar. Incluye lo que piden **PW15 (EC2 + GitHub)** y **PDA06 (Nginx + PM2 + CI/CD + Webhooks)**.
 
+**Repositorio:** https://github.com/Mesias-prog/Practica-AWS-NODE · Resumen del proyecto en el [README](README.md).
+
 ```
 index.js                     API Express (puerto 3000) + /health + página principal
 src/                         rutas y controlador REST /api/empleados (CRUD)
